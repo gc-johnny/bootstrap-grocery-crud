@@ -1,7 +1,14 @@
+1.3.4
+    The more button doesn't work in some cases (e.g. at mobile devices)
+1.3.3
+    - Fixing CSS issue with modal that was covered by the overlay
+    - Use a custom jquery library for bootstrap dropdown and modal to avoid conflicts
+1.3.2
+    - CSRF protection to work as expected when enabled
 1.3.1
-    The edit is visible on mobiles even though we have enabled the unset_edit functionality
-    Updating libraries to the latest versions and removing all the libraries that the theme is not using anymore.
-    Fixing bug with full screen that didn't work at the 'View' operation.
+    - Updating libraries to the latest versions and removing all the libraries that the theme is not using anymore.
+    - Bug fix: The edit was visible on mobiles even though we have enabled the unset_edit functionality
+    - Bug fix: Full screen that didn't work at the 'View' operation.
 1.3.0
     - #27: Remember the full screen button when it is pressed for the other pages
     - Important CSS changes for compatibility with the most of the admin pages

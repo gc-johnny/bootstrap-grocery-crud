@@ -44,8 +44,8 @@
                     <?php if (!empty($row->action_urls) || !$unset_read || !$unset_delete) { ?>
 
                         <?php if ($show_more_button) { ?>
-                            <div class="btn-group dropdown">
-                                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-default dropdown-toggle gc-bootstrap-dropdown">
                                     <?php echo $more_string; ?>
                                     <span class="caret"></span>
                                 </button>
@@ -106,8 +106,8 @@
                 </div>
                 <div class="only-mobiles">
                     <?php if ($buttons_counter > 0) { ?>
-                    <div class="btn-group dropdown">
-                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-default gc-bootstrap-dropdown dropdown-toggle">
                             <?php echo $this->l('list_actions'); ?>
                             <span class="caret"></span>
                         </button>

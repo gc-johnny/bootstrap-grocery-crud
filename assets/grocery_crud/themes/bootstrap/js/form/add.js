@@ -1,5 +1,22 @@
+/*global jQuery, csrf_cookie_name */
 jQuery(function ($) {
-    "use strict";
+    var $csrf_field,
+        save_and_close = false,
+        csrf_field = null;
+
+    $csrf_field = $('#crudForm>input[type=hidden]:first');
+
+    if ($csrf_field.length === 1) {
+        csrf_field = {
+            name: $csrf_field.attr('name'),
+            value: $csrf_field.val(),
+            csrf_cookie_name: csrf_cookie_name
+        };
+
+        if (csrf_field.name === undefined || csrf_field.value === undefined || csrf_field.csrf_cookie_name === '') {
+            csrf_field = null;
+        }
+    }
 
     $('.ptogtitle').click(function () {
         if ($(this).hasClass('vsble')) {
@@ -11,8 +28,6 @@ jQuery(function ($) {
         }
     });
 
-    var save_and_close = false;
-
     $('#save-and-go-back-button').click(function(){
         save_and_close = true;
 
@@ -21,6 +36,10 @@ jQuery(function ($) {
 
     $('#crudForm').submit(function(){
         var my_crud_form = $(this);
+
+        if (csrf_field !== null) {
+            $csrf_field.val(getCookie(csrf_field.csrf_cookie_name));
+        }
 
         $(this).ajaxSubmit({
             url: validation_url,
@@ -31,6 +50,10 @@ jQuery(function ($) {
             },
             success: function(data){
                 $("#FormLoading").hide();
+                if (csrf_field !== null) {
+                    $csrf_field.val(getCookie(csrf_field.csrf_cookie_name));
+                }
+
                 if(data.success)
                 {
                     $('#crudForm').ajaxSubmit({
@@ -88,6 +111,10 @@ jQuery(function ($) {
                 }
             },
             error: function(){
+                if (csrf_field !== null) {
+                    $csrf_field.val(getCookie(csrf_field.csrf_cookie_name));
+                }
+
                 error_message (message_insert_error);
                 $("#FormLoading").hide();
             }
@@ -139,4 +166,20 @@ function clearForm()
     $('.chosen-multiple-select, .chosen-select, .ajax-chosen-select').each(function(){
         $(this).trigger("liszt:updated");
     });
+}
+
+function form_success_message(success_message)
+{
+    $('#report-success').slideUp('fast');
+    $('#report-success').html(success_message);
+    $('#report-success').slideDown('normal');
+    $('#report-error').slideUp('fast').html('');
+}
+
+function form_error_message(error_message)
+{
+    $('#report-error').slideUp('fast');
+    $('#report-error').html(error_message);
+    $('#report-error').slideDown('normal');
+    $('#report-success').slideUp('fast').html('');
 }

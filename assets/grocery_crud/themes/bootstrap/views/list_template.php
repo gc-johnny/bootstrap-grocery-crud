@@ -6,7 +6,6 @@
     $this->set_css($this->default_theme_path.'/bootstrap/css/general.css');
     $this->set_css($this->default_theme_path.'/bootstrap/css/plugins/animate.min.css');
 
-
     if ($this->config->environment == 'production') {
         $this->set_js_lib($this->default_javascript_path.'/'.grocery_CRUD::JQUERY);
         $this->set_js_lib($this->default_theme_path.'/bootstrap/build/js/global-libs.min.js');
@@ -18,8 +17,8 @@
     }
 
     //section libs
-    $this->set_js_lib($this->default_theme_path.'/bootstrap/js/bootstrap/dropdown.min.js');
-    $this->set_js_lib($this->default_theme_path.'/bootstrap/js/bootstrap/modal.min.js');
+    $this->set_js_lib($this->default_theme_path.'/bootstrap/js/jquery-plugins/gc-dropdown.min.js');
+    $this->set_js_lib($this->default_theme_path.'/bootstrap/js/jquery-plugins/gc-modal.min.js');
     $this->set_js_lib($this->default_theme_path.'/bootstrap/js/jquery-plugins/bootstrap-growl.min.js');
     $this->set_js_lib($this->default_theme_path.'/bootstrap/js/jquery-plugins/jquery.print-this.js');
 
@@ -27,6 +26,7 @@
     //page js
     $this->set_js_lib($this->default_theme_path.'/bootstrap/js/datagrid/gcrud.datagrid.js');
     $this->set_js_lib($this->default_theme_path.'/bootstrap/js/datagrid/list.js');
+
 
     $colspans = (count($columns) + 2);
 
@@ -61,6 +61,8 @@
             '<span class="current-total-results">'. $this->get_total_results() . '</span>'
         ),
         $this->l('list_displaying'));
+
+    include(__DIR__ . '/common_javascript_vars.php');
 ?>
 <script type='text/javascript'>
     var base_url = '<?php echo base_url();?>';
@@ -71,7 +73,7 @@
     var unique_hash = '<?php echo $unique_hash; ?>';
 
     var message_alert_delete = "<?php echo $this->l('alert_delete'); ?>";
-
+    var THEME_VERSION = '1.3.4';
 </script>
     <br/>
     <div class="container gc-container">
@@ -224,7 +226,7 @@
 
                                                 <!-- Start of: Settings button -->
                                                 <div class="btn-group floatR t20 l10 settings-button-container">
-                                                    <button type="button" class="btn btn-default dropdown-toggle settings-button" data-toggle="dropdown">
+                                                    <button type="button" class="btn btn-default gc-bootstrap-dropdown settings-button dropdown-toggle">
                                                         <i class="fa fa-cog r5"></i>
                                                         <span class="caret"></span>
                                                     </button>

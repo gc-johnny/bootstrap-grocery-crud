@@ -14,6 +14,8 @@ if ($this->config->environment == 'production') {
     $this->set_js_lib($this->default_theme_path.'/bootstrap/js/common/cache-library.js');
     $this->set_js_lib($this->default_theme_path.'/bootstrap/js/common/common.js');
 }
+
+include(__DIR__ . '/common_javascript_vars.php');
 ?>
 <div class="crud-form" data-unique-hash="<?php echo $unique_hash; ?>">
     <div class="container gc-container">

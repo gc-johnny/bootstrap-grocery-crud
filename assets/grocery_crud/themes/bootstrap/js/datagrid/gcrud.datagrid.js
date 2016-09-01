@@ -1,4 +1,4 @@
-/*global jQuery, console, setTimeout, ajax_list_url, unique_hash */
+/*global jQuery, console, setTimeout, ajax_list_url, unique_hash, csrf_cookie_name */
 (function ($) {
     "use strict";
 
@@ -154,7 +154,8 @@
     };
 
     Datagrid.prototype.datagridInit = function () {
-        var success_message_container = this.gcrud_container.find('.success-message');
+        var success_message_container = this.gcrud_container.find('.success-message'),
+            $csrf_field;
 
         if (!success_message_container.is(':empty')) {
             $.growl(success_message_container.html(), {
@@ -167,10 +168,13 @@
             });
         }
 
-        if ($('#gcrud-search-form>div:first>input[type=hidden]').length === 1) {
+        $csrf_field = $('#gcrud-search-form>input[type=hidden]:first');
+
+        if ($csrf_field.length === 1) {
             this.csrf_field = {
-                name: $('#gcrud-search-form>div:first>input[type=hidden]').attr('name'),
-                value: $('#gcrud-search-form>div:first>input[type=hidden]').val()
+                name: $csrf_field.attr('name'),
+                value: $csrf_field.val(),
+                csrf_cookie_name: csrf_cookie_name
             };
 
             if (this.csrf_field.name === undefined || this.csrf_field.value === undefined) {
@@ -216,6 +220,10 @@
         });
     };
 
+    Datagrid.prototype.setCsrfValue = function () {
+        this.csrf_field.value = getCookie(this.csrf_field.csrf_cookie_name);
+    };
+
     Datagrid.prototype.listenerExportButton = function () {
         var datagrid_object = this;
         datagrid_object.gcrud_container.find('.gc-export').click(function () {
@@ -225,6 +233,11 @@
             $.each(datagrid_object.gcrud_container.find('form').serializeArray(), function (i, field) {
                 form_inputs = form_inputs + '<input type="hidden" name="' + field.name + '" value="' + field.value + '">';
             });
+
+            if (datagrid_object.csrf_field !== null) {
+                datagrid_object.setCsrfValue();
+                form_inputs += '<input type="hidden" name = "' + datagrid_object.csrf_field.name + '" value="' + datagrid_object.csrf_field.value + '"/>';
+            }
 
             if (datagrid_object.gcrud_container.find('.search-input').val() !== '') {
                 form_inputs = form_inputs + '<input type="hidden" name="search_field" value="" />' +
@@ -256,6 +269,7 @@
                 form_on_demand;
 
             if (datagrid_object.csrf_field !== null) {
+                datagrid_object.setCsrfValue();
                 form_input_html += '<input type="hidden" name = "' + datagrid_object.csrf_field.name + '" value="' + datagrid_object.csrf_field.value + '"/>';
             }
 
@@ -327,6 +341,55 @@
 
     };
 
+    /**
+     *
+     * @param {Object} result
+     */
+    Datagrid.prototype.datagridOnAjaxComplete = function (result) {
+        var active_column,
+            paging_ends,
+            per_page_value = this.gcrud_container.find('.' + Datagrid.CLASS_PER_PAGE).val();
+
+        this.gcrud_container.find('.select-all-none').prop('checked', false);
+
+        this.gcrud_container.find('.grocery-crud-table tbody').html(result.tbody_html);
+
+        $('.current-total-results').html(result.current_total_results);
+
+        if (result.current_total_results > 10) {
+            paging_ends = parseInt($('input[name="page_number"]').val(), 10) * per_page_value;
+
+            if (paging_ends > result.current_total_results) {
+                paging_ends = result.current_total_results;
+            }
+            $('.paging-ends').html(paging_ends);
+        } else {
+            $('.paging-ends').html(result.current_total_results);
+        }
+
+        $('.paging-starts').html((parseInt($('input[name="page_number"]').val(), 10) - 1) * per_page_value + 1);
+
+        active_column = $('.column-with-ordering.active:first');
+        if (active_column.length > 0) {
+            this.gcrud_container.find('.grocery-crud-table').
+            find('thead tr td:nth-child(' + (active_column.index() + 2) + '), tbody tr td:nth-child(' + (active_column.index() + 2) + ')').
+            addClass('active');
+        }
+
+        if (result.current_total_results < parseInt(this.gcrud_container.find('.full-total').html(), 10)) {
+            this.gcrud_container.find('.full-total-container').removeClass('hidden');
+        } else {
+            this.gcrud_container.find('.full-total-container').addClass('hidden');
+        }
+
+        this.listenerLoadMoreButton();
+        this.appendSearchClearButtons();
+        this.listenerSelectRow();
+        this.pagingCalculations();
+        this.hideShowDeleteButton();
+        this.listenerDeleteRowClick();
+    };
+
     Datagrid.prototype.SearchAndOrderingTrigger = function () {
         var order_by = $('.column-with-ordering.active:first').data('order-by'),
             order_direction = '',
@@ -372,73 +435,9 @@
             search_text: search_texts
         };
 
-        CacheLibrary.setLocalStorageItem('gcrud_' + unique_hash , JSON.stringify(data_to_send));
+        CacheLibrary.setLocalStorageItem('gcrud_' + unique_hash, JSON.stringify(data_to_send));
 
-        if (this.csrf_field !== null) {
-            data_to_send[this.csrf_field.name] = this.csrf_field.value;
-        }
-
-        $.ajax({
-            beforeSend: function () {
-                gcrud_container.addClass(Datagrid.CLASS_LOADING);
-            },
-            complete: function () {
-                gcrud_container.removeClass(Datagrid.CLASS_LOADING);
-            },
-            error: function () {
-                gcrud_container.removeClass(Datagrid.CLASS_LOADING);
-            },
-            data: data_to_send,
-            dataType: 'json',
-            url: ajax_list_url,
-            success: function (result) {
-                var active_column, paging_ends;
-
-                datagrid_object.gcrud_container.addClass(Datagrid.CLASS_LOADING);
-
-                datagrid_object.gcrud_container.find('.select-all-none').prop('checked', false);
-
-                datagrid_object.gcrud_container.find('.grocery-crud-table tbody').html(result.tbody_html);
-
-                $('.current-total-results').html(result.current_total_results);
-
-                if (result.current_total_results > 10) {
-                    paging_ends = parseInt($('input[name="page_number"]').val(), 10) * per_page_value;
-
-                    if (paging_ends > result.current_total_results) {
-                        paging_ends = result.current_total_results;
-                    }
-                    $('.paging-ends').html(paging_ends);
-                } else {
-                    $('.paging-ends').html(result.current_total_results);
-                }
-
-                $('.paging-starts').html((parseInt($('input[name="page_number"]').val(), 10) - 1) * per_page_value + 1);
-
-                active_column = $('.column-with-ordering.active:first');
-                if (active_column.length > 0) {
-                    gcrud_container.find('.grocery-crud-table').
-                        find('thead tr td:nth-child(' + (active_column.index() + 2) + '), tbody tr td:nth-child(' + (active_column.index() + 2) + ')').
-                        addClass('active');
-                }
-
-                if (result.current_total_results < parseInt(datagrid_object.gcrud_container.find('.full-total').html(), 10)) {
-                    datagrid_object.gcrud_container.find('.full-total-container').removeClass('hidden');
-                } else {
-                    datagrid_object.gcrud_container.find('.full-total-container').addClass('hidden');
-                }
-
-                datagrid_object.listenerLoadMoreButton();
-                datagrid_object.appendSearchClearButtons();
-                datagrid_object.listenerSelectRow();
-                datagrid_object.pagingCalculations();
-                datagrid_object.hideShowDeleteButton();
-                datagrid_object.listenerDeleteRowClick();
-
-                gcrud_container.removeClass(Datagrid.CLASS_LOADING);
-            },
-            method: 'post'
-        });
+        this.sendAjaxPost(data_to_send, ajax_list_url, this.datagridOnAjaxComplete.bind(this));
     };
 
     Datagrid.prototype.listenerSearchInput = function () {
@@ -639,6 +638,30 @@
         }
     };
 
+    Datagrid.prototype.sendAjaxPost = function (dataToSend, urlPath, callbackOnComplete) {
+        if (this.csrf_field !== null) {
+            this.setCsrfValue();
+            dataToSend[this.csrf_field.name] = this.csrf_field.value;
+        }
+
+        $.ajax({
+                beforeSend: function () {
+                    this.gcrud_container.addClass(Datagrid.CLASS_LOADING);
+                }.bind(this),
+                data: dataToSend,
+                dataType: 'json',
+                url: urlPath,
+                success: function (result) {
+                    callbackOnComplete(result);
+                }.bind(this),
+                method: 'post'
+            })
+            .always(function() {
+                this.gcrud_container.removeClass(Datagrid.CLASS_LOADING);
+            }.bind(this));
+    };
+
+
     Datagrid.prototype.calculationsBeforeDelete = function (total_deleted_records) {
         var datagrid_object = this,
             my_current_total = parseInt(datagrid_object.gcrud_container.find('.current-total-results').html(), 10),
@@ -656,7 +679,6 @@
             (parseInt(datagrid_object.gcrud_container.find('.full-total').html(), 10) - total_deleted_records)
         );
     };
-
 
     Datagrid.prototype.listenerDeleteMultiple = function () {
         var datagrid_object = this;
@@ -679,68 +701,50 @@
             datagrid_object.hideShowDeleteButton();
         });
 
-        datagrid_object.gcrud_container.find('.delete-selected-button').click(function () {
+        this.gcrud_container.find('.delete-selected-button').click(function () {
 
-            datagrid_object.gcrud_container.find('.delete-multiple-confirmation').modal();
-            datagrid_object.gcrud_container.find('.delete-multiple-confirmation').on('hidden.bs.modal', function () {
-                datagrid_object.gcrud_container.find('.delete-multiple-confirmation-button').unbind('click');
-            });
+            this.gcrud_container.find('.delete-multiple-confirmation').gc_modal();
+            this.gcrud_container.find('.delete-multiple-confirmation').on('hidden.bs.modal', function () {
+                this.gcrud_container.find('.delete-multiple-confirmation-button').unbind('click');
+            }.bind(this));
 
-            datagrid_object.gcrud_container.find('.delete-multiple-confirmation-button').click(function (event) {
+            this.gcrud_container.find('.delete-multiple-confirmation-button').click(function (event) {
                 event.preventDefault();
 
-                var my_modal = datagrid_object.gcrud_container.find('.delete-multiple-confirmation:first'),
-                    my_current_total = parseInt(datagrid_object.gcrud_container.find('.current-total-results').html(), 10),
-                    my_current_page_number = parseInt(datagrid_object.gcrud_container.find('.page-number-input').val(), 10),
-                    my_current_per_page = parseInt(datagrid_object.gcrud_container.find('.' + Datagrid.CLASS_PER_PAGE).val(), 10),
+                var my_modal = this.gcrud_container.find('.delete-multiple-confirmation:first'),
                     delete_selected = [],
-                    data_to_send;
+                    data_to_send,
+                    urlPath = this.gcrud_container.find('.delete-multiple-confirmation-button').data('target');
 
-                datagrid_object.gcrud_container.find('.select-row:checked').each(function () {
+                this.gcrud_container.find('.select-row:checked').each(function () {
                     delete_selected.push($(this).data('id'));
                 });
 
-                datagrid_object.calculationsBeforeDelete(delete_selected.length);
+                this.calculationsBeforeDelete(delete_selected.length);
 
                 data_to_send = {
                     ids: delete_selected
                 };
 
-                if (datagrid_object.csrf_field !== null) {
-                    data_to_send[datagrid_object.csrf_field.name] = datagrid_object.csrf_field.value;
-                }
+                this.sendAjaxPost(data_to_send, urlPath, function (output) {
+                    if (output.success) {
+                        $.growl(output.success_message, {
+                            type: 'success',
+                            delay: 10000,
+                            animate: {
+                                enter: 'animated bounceInDown',
+                                exit: 'animated bounceOutUp'
+                            }
+                        });
 
-                $.ajax({
-                    beforeSend: function () {
-                        datagrid_object.gcrud_container.addClass(Datagrid.CLASS_LOADING);
-                    },
-                    error: function () {
-                        datagrid_object.gcrud_container.removeClass(Datagrid.CLASS_LOADING);
-                    },
-                    data: data_to_send,
-                    method: 'post',
-                    dataType: 'json',
-                    url: datagrid_object.gcrud_container.find('.delete-multiple-confirmation-button').data('target'),
-                    success: function (output) {
-                        if (output.success) {
-                            $.growl(output.success_message, {
-                                type: 'success',
-                                delay: 10000,
-                                animate: {
-                                    enter: 'animated bounceInDown',
-                                    exit: 'animated bounceOutUp'
-                                }
-                            });
-
-                        }
-
-                        my_modal.modal('hide');
-                        datagrid_object.SearchAndOrderingTrigger();
                     }
-                });
-            });
 
-        });
+                    my_modal.gc_modal('hide');
+                    this.SearchAndOrderingTrigger();
+                }.bind(this));
+            }.bind(this));
+
+        }.bind(this));
     };
 
     Datagrid.prototype.listenerDeleteRowClick = function ($delete_row_container) {
@@ -784,13 +788,13 @@
 
                         }
 
-                        my_modal.modal('hide');
+                        my_modal.gc_modal('hide');
                         datagrid_object.SearchAndOrderingTrigger();
                     }
                 });
             });
 
-            datagrid_object.gcrud_container.find('.delete-confirmation').modal();
+            datagrid_object.gcrud_container.find('.delete-confirmation').gc_modal();
             datagrid_object.gcrud_container.find('.delete-confirmation').on('hidden.bs.modal', function () {
                 datagrid_object.gcrud_container.find('.delete-confirmation-button').unbind('click');
             });

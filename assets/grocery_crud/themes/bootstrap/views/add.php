@@ -16,8 +16,8 @@
         $this->set_js_config($this->default_theme_path.'/bootstrap/js/form/add.js');
     }
 
-	$this->set_js_lib($this->default_javascript_path.'/jquery_plugins/jquery.noty.js');
-	$this->set_js_config($this->default_javascript_path.'/jquery_plugins/config/jquery.noty.config.js');
+
+include(__DIR__ . '/common_javascript_vars.php');
 ?>
 <div class="crud-form" data-unique-hash="<?php echo $unique_hash; ?>">
     <div class="container gc-container">
