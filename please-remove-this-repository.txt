@@ -1,0 +1,24 @@
+Hello Phate212
+
+I did notice that you have the purchased bootstrap theme publicly shared into github for free. 
+I guess this didn't happen on purpose.
+
+The original fork that you have was from the repository: https://github.com/pewpewyou/bootstrap-grocery-crud 
+(the person that did initially commit the code on github) and he was asked by me - unofficially with an 
+email like this - to remove the repository or else there will be a more official abuse report 
+with a DMCA takedown notice as the person did also changed the license provided. 
+I know people from the community and in fact I knew that this was not done on purpose 
+and that's why I did send him just an unofficial email for that.
+
+The person did kindly remove any repository that he had and also some other projects in github 
+that included the bootstrap theme (he did have 2 more on github). 
+
+The thing that I've missed however was that not all the forks was removed automatically and 
+I didn't know that apparently! 
+
+I couldn't find your email and I did contact github and the only solution that I could find is to send you this pull request.
+
+Please remove this repository from public. In case you need more info please send me an email at: info@grocerycrud.com
+
+Regards
+John Skoumbourdis
